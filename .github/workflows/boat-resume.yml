@@ -1,0 +1,47 @@
+name: Resume the Boat sandbox
+
+# Starts the T3 Code sandbox before the midnight tasks in Singapore.
+# A stopped sandbox cannot start itself, and the trial stops it after two hours.
+# T3 Code runs a task that it missed, so a late start only delays the task.
+
+on:
+  schedule:
+    # 23:40 in Singapore is 15:40 UTC.
+    - cron: "40 15 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  resume:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Resume the sandbox
+        env:
+          BOAT_RESUME_KEY: ${{ secrets.BOAT_RESUME_KEY }}
+          BOAT_SANDBOX_ID: ${{ secrets.BOAT_SANDBOX_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "${BOAT_RESUME_KEY}" ] || [ -z "${BOAT_SANDBOX_ID}" ]; then
+            echo "A required secret is not set. Set BOAT_RESUME_KEY and BOAT_SANDBOX_ID."
+            exit 1
+          fi
+          base="https://boat.dev/api/v1/sandboxes/${BOAT_SANDBOX_ID}"
+          state=$(curl -sS -m 30 -H "Authorization: Bearer ${BOAT_RESUME_KEY}" "${base}" \
+            | python3 -c "import json,sys; d=json.load(sys.stdin); print((d.get('sandbox') or d).get('state','unknown'))")
+          echo "State before the call: ${state}"
+          case "${state}" in
+            ready|idle|running|cloning|provisioned)
+              echo "The sandbox is up. No call is necessary."
+              exit 0
+              ;;
+          esac
+          code=$(curl -sS -m 60 -o /dev/null -w "%{http_code}" -X POST \
+            -H "Authorization: Bearer ${BOAT_RESUME_KEY}" \
+            -H "Content-Type: application/json" -d '{}' "${base}/resume")
+          echo "Resume call returned HTTP ${code}"
+          case "${code}" in
+            2*) exit 0 ;;
+            *) echo "The resume call failed."; exit 1 ;;
+          esac
