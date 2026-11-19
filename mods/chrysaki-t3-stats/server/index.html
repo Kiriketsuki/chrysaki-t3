@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chrysaki session stats</title>
+<style>
+:root {
+  --base: #161821; --abyss: #0f1117; --surface: #1c1f2b; --border: #363a4f;
+  --text: #e0e2ea; --text2: #a0a4b8; --muted: #6a6e82;
+  --emerald: #1a8a6a; --teal: #20969c; --blue: #122858; --blue-light: #1c3d7a;
+  --amethyst: #583090; --blonde: #fbb13c; --error: #b53f4a; --cerulean: #3d95e0;
+  --mono: ui-monospace, "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--base); color: var(--text); }
+body { font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; min-height: 100vh; }
+.rule { position: fixed; inset: 0 0 auto 0; height: 3px; z-index: 2;
+  background: linear-gradient(90deg, #1a8a6a, #1c3d7a, #583090); }
+header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  padding: 18px 16px 10px; }
+h1 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--text2); }
+#status { font: 11px var(--mono); color: var(--muted); }
+#status.bad { color: var(--error); }
+main { display: grid; gap: 12px; padding: 4px 16px 24px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); align-items: start; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 2px; padding: 12px; min-width: 0; }
+.card.stale { opacity: .5; }
+.head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.title { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.age { font: 11px var(--mono); color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 4px 0 8px; color: var(--text2); font-size: 12px; }
+.badge { font: 11px var(--mono); padding: 0 6px; border: 1px solid var(--blue-light); background: var(--blue);
+  color: var(--text); border-radius: 2px; }
+.badge.personal { border-color: var(--amethyst); background: #2a1650; }
+.row { display: grid; grid-template-columns: 4.6rem 1fr 3.4rem; gap: 8px; align-items: center; margin-top: 6px; }
+.label { color: var(--text2); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.val { font: 12px var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+.bar { height: 8px; background: var(--abyss); border: 1px solid var(--border); border-radius: 1px; overflow: hidden; }
+.fill { height: 100%; }
+.fill.ctx { background: linear-gradient(90deg, #583090, #3d95e0); }
+.fill.lim { background: linear-gradient(90deg, #1a8a6a, #20969c); }
+.fill.warn { background: var(--blonde); }
+.fill.crit { background: var(--error); }
+.sub { grid-column: 2 / 4; font: 11px var(--mono); color: var(--muted); margin-top: -2px; font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.stats { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; padding-top: 8px;
+  border-top: 1px solid var(--border); font: 12px var(--mono); color: var(--text2); font-variant-numeric: tabular-nums; }
+.empty { grid-column: 1 / -1; padding: 32px 12px; text-align: center; color: var(--muted);
+  border: 1px dashed var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="rule"></div>
+<header><h1>Sessions</h1><span id="status">connecting</span></header>
+<main id="root"></main>
+<script>
+"use strict";
+const POLL_MS = 2000;
+const STALE_MS = 10 * 60 * 1000;
+const WARN_AT = 80;
+const CRIT_AT = 90;
+const root = document.getElementById("root");
+const statusEl = document.getElementById("status");
+
+// Every node comes from createElement and textContent, because the session
+// files are external input.
+function el(tag, cls, text) {
+  const node = document.createElement(tag);
+  if (cls) node.className = cls;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function isNum(v) { return typeof v === "number" && Number.isFinite(v); }
+function pct(v) { return Math.max(0, Math.min(100, v)); }
+
+function ago(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  if (s < 60) return s + "s ago";
+  if (s < 3600) return Math.floor(s / 60) + "m ago";
+  if (s < 86400) return Math.floor(s / 3600) + "h ago";
+  return Math.floor(s / 86400) + "d ago";
+}
+
+function resetText(at, now) {
+  if (!isNum(at)) return "";
+  const left = at - now;
+  if (left <= 0) return "reset due";
+  const m = Math.floor(left / 60000);
+  const d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60;
+  if (d > 0) return "resets in " + d + "d " + h + "h";
+  if (h > 0) return "resets in " + h + "h " + mm + "m";
+  return "resets in " + mm + "m";
+}
+
+function folderOf(cwd) {
+  if (typeof cwd !== "string" || cwd === "") return "unknown folder";
+  const parts = cwd.replace(/[\\/]+$/, "").split(/[\\/]/);
+  return parts[parts.length - 1] || cwd;
+}
+
+function bar(percent, cls) {
+  const outer = el("div", "bar");
+  const inner = el("div", "fill " + cls);
+  inner.style.width = pct(percent) + "%";
+  outer.appendChild(inner);
+  return outer;
+}
+
+function row(card, label, percent, cls, valueText, subText) {
+  card.appendChild(el("div", "row")).append(el("span", "label", label), bar(percent, cls), el("span", "val", valueText));
+  if (subText) card.appendChild(el("div", "row")).append(el("span"), el("span", "sub", subText), el("span"));
+}
+
+function limitClass(used) { return used >= CRIT_AT ? "crit" : used >= WARN_AT ? "warn" : "lim"; }
+
+function tokens(n) { return n >= 1000 ? (n / 1000).toFixed(n >= 100000 ? 0 : 1) + "k" : String(n); }
+
+function contextRow(card, c) {
+  if (typeof c !== "object" || c === null || !isNum(c.usedPercent)) return;
+  const detail = isNum(c.usedTokens) && isNum(c.maxTokens) ? tokens(c.usedTokens) + " of " + tokens(c.maxTokens) : "";
+  row(card, "context", c.usedPercent, "ctx", Math.round(c.usedPercent) + "%", detail);
+}
+
+function limitRows(card, limits, prefix, now) {
+  for (const l of Array.isArray(limits) ? limits : []) {
+    if (typeof l !== "object" || l === null || !isNum(l.usedPercent)) continue;
+    const name = (prefix ? prefix + " " : "") + String(l.label || l.id || "limit");
+    row(card, name, l.usedPercent, limitClass(l.usedPercent), Math.round(l.usedPercent) + "%", resetText(l.resetsAt, now));
+  }
+}
+
+function metaLine(s) {
+  const meta = el("div", "meta");
+  if (typeof s.model === "string" && s.model) meta.appendChild(el("span", "", s.model));
+  const hub = s.hub;
+  if (typeof hub === "object" && hub !== null && typeof hub.pool === "string") {
+    meta.appendChild(el("span", "badge " + (hub.pool === "personal" ? "personal" : ""), hub.pool));
+    if (typeof hub.seat === "string") meta.appendChild(el("span", "", hub.seat));
+  }
+  return meta;
+}
+
+function hubBlock(card, s, now) {
+  const hub = s.hub;
+  if (typeof hub !== "object" || hub === null) return limitRows(card, s.limits, "", now);
+  if (typeof hub.seat !== "string") {
+    card.appendChild(el("div", "muted", "hub seat unknown"));
+    return;
+  }
+  limitRows(card, hub.limits, "seat", now);
+}
+
+function card(s, now) {
+  const age = isNum(s.updatedAt) ? now - s.updatedAt : 0;
+  const c = el("section", "card" + (age > STALE_MS ? " stale" : ""));
+  const head = el("div", "head");
+  head.append(el("div", "title", folderOf(s.cwd)), el("div", "age", ago(age)));
+  c.append(head, metaLine(s));
+  contextRow(c, s.context);
+  hubBlock(c, s, now);
+  const stats = el("div", "stats");
+  const cost = typeof s.cost === "object" && s.cost !== null && isNum(s.cost.usd) ? "$" + s.cost.usd.toFixed(2) + " est." : "no cost";
+  stats.append(el("span", "", cost), el("span", "", (isNum(s.turns) ? s.turns : 0) + " turns"),
+    el("span", "", (isNum(s.toolCalls) ? s.toolCalls : 0) + " tools"));
+  c.appendChild(stats);
+  return c;
+}
+
+function draw(data) {
+  const sessions = Array.isArray(data.sessions) ? data.sessions : [];
+  const now = isNum(data.now) ? data.now : Date.now();
+  if (sessions.length === 0) {
+    root.replaceChildren(el("div", "empty", "No session has written stats yet."));
+    return;
+  }
+  root.replaceChildren(...sessions.map(s => card(s, now)));
+}
+
+async function poll() {
+  try {
+    const res = await fetch("/api/sessions", { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    draw(await res.json());
+    statusEl.className = "";
+    statusEl.textContent = "live";
+  } catch (error) {
+    statusEl.className = "bad";
+    statusEl.textContent = "server unreachable";
+  }
+}
+
+poll();
+setInterval(poll, POLL_MS);
+</script>
+</body>
+</html>

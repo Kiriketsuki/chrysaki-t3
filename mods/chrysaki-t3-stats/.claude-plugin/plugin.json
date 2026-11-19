@@ -1,0 +1,27 @@
+{
+  "name": "chrysaki-t3-stats",
+  "version": "0.1.0",
+  "description": "Writes the stats of each session to a JSON file and serves them on a local web page",
+  "author": { "name": "Kiriketsuki" },
+  "userConfig": {
+    "dataDir": {
+      "type": "string",
+      "title": "Data folder",
+      "description": "Folder for the session files. Empty means the .cache/chrysaki-t3-stats folder in the home folder.",
+      "default": ""
+    },
+    "port": {
+      "type": "string",
+      "title": "Port",
+      "description": "The local port of the stats page. The server binds 127.0.0.1 only.",
+      "default": "4517"
+    },
+    "serve": {
+      "type": "string",
+      "title": "Start the server",
+      "description": "on starts the local page server at session start. off skips it.",
+      "default": "on",
+      "options": ["on", "off"]
+    }
+  }
+}

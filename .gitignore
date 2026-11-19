@@ -1,0 +1,10 @@
+# Claude Code writes the API types here when it loads a mod.
+mods/*/.claude-plugin/types/
+.claude/
+node_modules/
+__pycache__/
+*.pyc
+*.stackdump
+# Scratch output from the T3 Code capability probe.
+probe/
+patches/
