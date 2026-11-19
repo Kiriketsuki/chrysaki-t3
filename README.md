@@ -7,6 +7,10 @@ T3 Code draws nothing that a Claude Code mod sends: no pane, no band, no toast a
 | Part | What it does |
 |:---|:---|
 | [`themes/chrysaki.json`](themes/chrysaki.json) | The Chrysaki look for the T3 Code app: colours for each role, plus CSS for the header, the composer and the usage card |
+| [`themes/chrysaki-contour.json`](themes/chrysaki-contour.json) | A sea chart behind the chat, with sharks, boats and a sea serpent that move, and a chart that reacts to a press and to a hover |
+| [`themes/chrysaki-forge.json`](themes/chrysaki-forge.json) | A smithy in colour ASCII cell art: a hearth, a smith and a molten seam |
+| [`themes/chrysaki-night-glass.json`](themes/chrysaki-night-glass.json) | A night sky with a moon, constellations and a lantern glow |
+| [`t3.json`](t3.json) | Project scripts that install a theme and change the app to it |
 | [`mods/chrysaki-t3-stats`](mods/chrysaki-t3-stats/) | Writes the stats of each session to a file and serves one page with all sessions. The page replaces the statusline |
 
 ## What a mod can do in T3 Code
@@ -30,11 +34,17 @@ A mod in T3 Code can guard, rewrite and add tools. It cannot show anything.
 
 ### Theme
 
-Ask the agent in a T3 Code thread to set the theme from `themes/chrysaki.json`. The agent publishes it with the `t3_theme_set` tool and the app changes at once.
+Open this repo as a project in T3 Code. Its `t3.json` adds one project script for each theme, such as **Theme: Chrysaki Contour**. A script installs the theme file from this repo and changes the app to it.
 
-The app keeps published themes in `~/.t3/userdata/themes/`. A copy of the file into that folder is not tested as an install route.
+From a terminal, the same step is:
 
-The theme is dark only. Chrysaki has no light palette.
+```bash
+t3 theme set themes/chrysaki-contour.json
+```
+
+The app keeps installed themes in `~/.t3/userdata/themes/`. A copy of a theme file into that folder also installs it.
+
+The themes are dark only. Chrysaki has no light palette.
 
 ### Stats page
 

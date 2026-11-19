@@ -8,3 +8,7 @@ __pycache__/
 # Scratch output from the T3 Code capability probe.
 probe/
 patches/
+# Browser tool logs from theme checks.
+.playwright-mcp/
+# The combined preview page goes stale between theme rounds.
+themes/preview.html

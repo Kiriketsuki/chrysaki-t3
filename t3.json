@@ -1,0 +1,35 @@
+{
+  "$schema": "https://t3.codes/schema/t3.json",
+  "scripts": [
+    {
+      "name": "Theme: Chrysaki",
+      "command": "t3 theme set themes/chrysaki.json",
+      "icon": "configure"
+    },
+    {
+      "name": "Theme: Chrysaki Contour",
+      "command": "t3 theme set themes/chrysaki-contour.json",
+      "icon": "configure"
+    },
+    {
+      "name": "Theme: Chrysaki Forge",
+      "command": "t3 theme set themes/chrysaki-forge.json",
+      "icon": "configure"
+    },
+    {
+      "name": "Theme: Chrysaki Night Glass",
+      "command": "t3 theme set themes/chrysaki-night-glass.json",
+      "icon": "configure"
+    },
+    {
+      "name": "Theme: install all four (no switch)",
+      "command": "node -e \"const fs=require('fs'),os=require('os'),path=require('path');const d=path.join(process.env.T3CODE_HOME||path.join(os.homedir(),'.t3'),'userdata','themes');fs.mkdirSync(d,{recursive:true});for(const f of fs.readdirSync('themes'))if(f.startsWith('chrysaki')&&f.endsWith('.json')){fs.copyFileSync(path.join('themes',f),path.join(d,f));console.log('installed '+f)}\"",
+      "icon": "build"
+    },
+    {
+      "name": "Theme: show active",
+      "command": "t3 theme show",
+      "icon": "play"
+    }
+  ]
+}
