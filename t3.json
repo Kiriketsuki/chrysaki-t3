@@ -18,12 +18,12 @@
     },
     {
       "name": "Theme: Chrysaki Night Glass",
-      "command": "t3 theme set themes/chrysaki-night-glass.json",
+      "command": "node -e \"const fs=require('fs'),os=require('os'),path=require('path');const d=path.join(process.env.T3CODE_HOME||path.join(os.homedir(),'.t3'),'userdata','themes');fs.mkdirSync(d,{recursive:true});for(const f of fs.readdirSync('themes'))if(f.startsWith('chrysaki')&&/\\.(json|webp|png|jpg)$/.test(f)){fs.copyFileSync(path.join('themes',f),path.join(d,f));console.log('installed '+f)}\" && t3 theme set themes/chrysaki-night-glass.json",
       "icon": "configure"
     },
     {
       "name": "Theme: install all four (no switch)",
-      "command": "node -e \"const fs=require('fs'),os=require('os'),path=require('path');const d=path.join(process.env.T3CODE_HOME||path.join(os.homedir(),'.t3'),'userdata','themes');fs.mkdirSync(d,{recursive:true});for(const f of fs.readdirSync('themes'))if(f.startsWith('chrysaki')&&f.endsWith('.json')){fs.copyFileSync(path.join('themes',f),path.join(d,f));console.log('installed '+f)}\"",
+      "command": "node -e \"const fs=require('fs'),os=require('os'),path=require('path');const d=path.join(process.env.T3CODE_HOME||path.join(os.homedir(),'.t3'),'userdata','themes');fs.mkdirSync(d,{recursive:true});for(const f of fs.readdirSync('themes'))if(f.startsWith('chrysaki')&&/\\.(json|webp|png|jpg)$/.test(f)){fs.copyFileSync(path.join('themes',f),path.join(d,f));console.log('installed '+f)}\"",
       "icon": "build"
     },
     {

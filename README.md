@@ -9,7 +9,7 @@ T3 Code draws nothing that a Claude Code mod sends: no pane, no band, no toast a
 | [`themes/chrysaki.json`](themes/chrysaki.json) | The Chrysaki look for the T3 Code app: colours for each role, plus CSS for the header, the composer and the usage card |
 | [`themes/chrysaki-contour.json`](themes/chrysaki-contour.json) | A sea chart behind the chat, with sharks, boats and a sea serpent that move, and a chart that reacts to a press and to a hover |
 | [`themes/chrysaki-forge.json`](themes/chrysaki-forge.json) | A smithy in colour ASCII cell art: a hearth, a smith and a molten seam |
-| [`themes/chrysaki-night-glass.json`](themes/chrysaki-night-glass.json) | A night sky with a moon, constellations and a lantern glow |
+| [`themes/chrysaki-night-glass.json`](themes/chrysaki-night-glass.json) | An observatory under an animated night sky: a galaxy, a moon and a comet in soft voxel splats, an orrery sidebar and a star chart composer. The sky is the file `chrysaki-night-glass.webp` beside the theme |
 | [`t3.json`](t3.json) | Project scripts that install a theme and change the app to it |
 | [`mods/chrysaki-t3-stats`](mods/chrysaki-t3-stats/) | Writes the stats of each session to a file and serves one page with all sessions. The page replaces the statusline |
 
@@ -43,6 +43,10 @@ t3 theme set themes/chrysaki-contour.json
 ```
 
 The app keeps installed themes in `~/.t3/userdata/themes/`. A copy of a theme file into that folder also installs it.
+
+Night Glass also needs its sky, `themes/chrysaki-night-glass.webp`, in that folder. `t3 theme set` copies only the theme file. The project script **Theme: Chrysaki Night Glass** copies both.
+
+Contour sets its cards in a handwriting font of Windows or macOS. Linux has none of them, so the theme uses [Comic Neue](https://comicneue.com) there. Install it to `~/.local/share/fonts/`.
 
 The themes are dark only. Chrysaki has no light palette.
 
